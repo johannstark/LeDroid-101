@@ -1,0 +1,12 @@
+[project]
+name = "ledroid-101"
+version = "0.1.0"
+description = "My approach to HuggingFace's LeRobot and SO-101 Robot Arm"
+readme = "README.md"
+requires-python = ">=3.14.4"
+dependencies = [
+  "torch>=2.11.0",
+  "torchvision>=0.26.0",
+  "lerobot",
+  "lerobot[feetech]"
+]
