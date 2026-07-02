@@ -1,3 +1,37 @@
 # LeDroid-101
 
-My approach to HuggingFace's LeRobot and SO-101 Robot Arm
+My approach to HuggingFace's LeRobot and SO-101 Robot Arm.
+
+---
+
+## Welcome to LeDroid-101 🤖
+
+LeDroid-101 is my custom approach for replicating, learning, and expanding HuggingFace's SO-101 Robot arm setup. This repository is intended to be replicated by anyone to learn everything about configuring, assembling, calibrating, and using this robot in a simplified and friendly way.
+
+We use Python version **3.13.7** and the extremely fast and deterministic package manager `uv` for managing all environments and dependencies.
+
+---
+
+## Getting Started
+
+To get started on your own replica of the SO-101 Robot Arm, we recommend reading the reference files in order. Choose the document based on your active setup stage:
+
+### Reference Guides & Documentation
+
+| Step | Topic | Reference File | Focus |
+| --- | --- | --- | --- |
+| **1** | **Basics & Installation** | [docs/installation.md](docs/installation.md) | Installing Python 3.13.7, configuring `uv`, and syncing the environment defined in [pyproject.toml](pyproject.toml). |
+| **2** | **Motors & Gearing** | [docs/assembly.md](docs/assembly.md#1-setting-servo-motor-ids) | Individual servo motor ID mapping (IDs 1-6) and baud rate options via `lerobot-find-port`. |
+| **3** | **Physical Assembly** | [docs/assembly.md](docs/assembly.md#2-assembling-the-so-101-robot-arm) | Step-by-step assembly of STS3215 joints from Joint 1 (Base) to Joint 6 (Gripper). |
+| **4** | **Calibration** | [docs/assembly.md](docs/assembly.md#3-calibration-procedures) | How to run the `lerobot-calibrate` script for both Leader and Follower configurations. |
+| **5** | **LeKinematics** | [lekinematics/theory.md](lekinematics/theory.md) <br> [lekinematics/le_kinematics.py](lekinematics/le_kinematics.py) | Forward and inverse kinematics theory and practical Python examples for the SO-101 arm. |
+
+---
+
+## Contributing and Community
+
+This project is fully open-source and welcoming replication. Feel free to open issues or Pull Requests with your own examples and use cases!
+
+---
+
+Made in Colombia 🇨🇴 with ❤️
