@@ -25,6 +25,7 @@ To get started on your own replica of the SO-101 Robot Arm, we recommend reading
 | **3** | **Physical Assembly** | [docs/assembly.md](docs/assembly.md#2-assembling-the-so-101-robot-arm) | Step-by-step assembly of STS3215 joints from Joint 1 (Base) to Joint 6 (Gripper). |
 | **4** | **Calibration** | [docs/assembly.md](docs/assembly.md#3-calibration-procedures) | How to run the `lerobot-calibrate` script for both Leader and Follower configurations. |
 | **5** | **LeKinematics** | [lekinematics/theory.md](lekinematics/theory.md) <br> [lekinematics/le_kinematics.py](lekinematics/le_kinematics.py) | Forward and inverse kinematics theory and practical Python examples for the SO-101 arm. |
+| **6** | **MuJoCo Simulation, Digital Twin & Real Control** | [docs/simulation.md](docs/simulation.md) <br> [main.py](main.py) | MuJoCo physics simulation, Gymnasium RL environment, 3D interactive viewer, Digital Twin mode (`--mode twin`), and Cartesian end-effector line routines for sim & real hardware. |
 
 ---
 
