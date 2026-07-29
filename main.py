@@ -55,6 +55,17 @@ def main() -> None:
         default="/dev/tty.usbmodem1201",
         help="Serial port for real physical arm (e.g., /dev/tty.usbmodem1201 or /dev/ttyUSB0).",
     )
+    parser.add_argument(
+        "--record",
+        action="store_true",
+        help="Record simulation execution to a video file.",
+    )
+    parser.add_argument(
+        "--record-path",
+        type=str,
+        default="video.mp4",
+        help="File path for recorded video (default: video.mp4).",
+    )
 
     args = parser.parse_args()
 
@@ -139,11 +150,6 @@ def main() -> None:
 
     # 2. Instantiate target robot instance (Sim, Real, or Twin)
     if args.mode in ["sim", "twin"]:
-        from simulation.simulate import ensure_mjpython
-
-        ensure_mjpython()
-        import mujoco.viewer
-
         if args.mode == "twin":
             from simulation.twin_robot import TwinSO101Robot
 
@@ -152,10 +158,21 @@ def main() -> None:
             robot = SO101Robot()
 
         robot.reset("HOME")
-        viewer = mujoco.viewer.launch_passive(robot.model, robot.data)
-        viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE
-        robot.viewer = viewer
-        print("MuJoCo Passive Viewer launched.")
+        if args.record and args.mode == "sim":
+            print(f"Starting headless video recording to {args.record_path}...")
+            if hasattr(robot, "start_recording"):
+                robot.start_recording(args.record_path)
+            robot.viewer = None
+        else:
+            from simulation.simulate import ensure_mjpython
+
+            ensure_mjpython()
+            import mujoco.viewer
+
+            viewer = mujoco.viewer.launch_passive(robot.model, robot.data)
+            viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE
+            robot.viewer = viewer
+            print("MuJoCo Passive Viewer launched.")
     else:
         print(f"Connecting to real SO-101 robot arm on port {args.port}...")
         robot = RealSO101Robot(port=args.port)
@@ -188,18 +205,22 @@ def main() -> None:
                     else:
                         robot.set_joint_positions(target_qpos)
                         time.sleep(1.0)
+                if args.record:
+                    break
 
         elif args.task == "line":
             axes_sequence = ["x", "y", "z"]
             axis_cycle = 0
+            num_sweeps = 1 if args.record else 3
+            step_delay = 0.0 if args.record else 0.03
 
-            # First transition from HOME to MIDDLE pose before starting axis sweeps
+            # First transition from HOME to SWEEP_HOME pose before starting axis sweeps
             if is_running():
-                print("\nTransitioning from HOME pose to MIDDLE pose before starting sweeps...")
+                print("\nTransitioning from HOME pose to SWEEP_HOME pose before starting sweeps...")
                 if hasattr(robot, "move_to_pose"):
-                    robot.move_to_pose(PRESET_POSES["MIDDLE"], duration_sec=1.2)
+                    robot.move_to_pose(PRESET_POSES["SWEEP_HOME"], duration_sec=1.2)
                 else:
-                    robot.set_joint_positions(PRESET_POSES["MIDDLE"])
+                    robot.set_joint_positions(PRESET_POSES["SWEEP_HOME"])
                     time.sleep(1.2)
 
             while is_running():
@@ -208,26 +229,30 @@ def main() -> None:
                 seq_msg = f"\n--- Axis Sequence [{current_axis.upper()}] (Cycle #{axis_cycle}) ---"
                 print(seq_msg)
 
-                # Perform 3 sweeps along current axis
-                for sweep_i in range(1, 4):
+                # Perform sweeps along current axis
+                for sweep_i in range(1, num_sweeps + 1):
                     if not is_running():
                         break
-                    print(f"Sweep {sweep_i}/3 along {current_axis.upper()}-axis...")
+                    print(f"Sweep {sweep_i}/{num_sweeps} along {current_axis.upper()}-axis...")
                     trajectory_gen.execute_line_sweep(
                         axis=current_axis,
                         distance=args.distance,
                         num_points=40,
-                        step_delay=0.03,
+                        step_delay=step_delay,
                     )
 
-                # Move back to MIDDLE pose before changing axis
+                # Move back to SWEEP_HOME pose before changing axis
                 if is_running():
-                    print("Returning to MIDDLE pose before switching axis...")
+                    print("Returning to SWEEP_HOME pose before switching axis...")
                     if hasattr(robot, "move_to_pose"):
-                        robot.move_to_pose(PRESET_POSES["MIDDLE"], duration_sec=0.8)
+                        robot.move_to_pose(PRESET_POSES["SWEEP_HOME"], duration_sec=0.8)
                     else:
-                        robot.set_joint_positions(PRESET_POSES["MIDDLE"])
+                        robot.set_joint_positions(PRESET_POSES["SWEEP_HOME"])
                         time.sleep(0.8)
+
+                if args.record and axis_cycle >= len(axes_sequence):
+                    print("\nCompleted recording full sweep across all axes.")
+                    break
 
     except KeyboardInterrupt:
         print("\nExecution interrupted by user.")
@@ -238,6 +263,9 @@ def main() -> None:
         robot.move_to_pose(PRESET_POSES["HOME"], duration_sec=1.0)
     else:
         robot.set_joint_positions(PRESET_POSES["HOME"])
+
+    if hasattr(robot, "stop_recording"):
+        robot.stop_recording()
 
     # Clean up simulation viewer or real hardware connection
     if args.mode in ["sim", "twin"] and hasattr(robot, "viewer") and robot.viewer is not None:

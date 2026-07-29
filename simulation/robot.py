@@ -13,6 +13,7 @@ PRESET_POSES: dict[str, np.ndarray] = {
     "REACH": np.array([0.0, 0.4, 0.6, -0.2, 0.0, 0.2]),
     "PICK": np.array([0.2, 0.3, 0.8, -0.3, 0.0, 0.3]),
     "STOW": np.array([0.0, 0.2, 0.5, -0.1, 0.0, 0.0]),
+    "SWEEP_HOME": np.array([0.0, -1.358, 0.854, 0.962, 0.0, 0.0]),
 }
 
 JOINT_NAMES = [
@@ -74,6 +75,10 @@ class SO101Robot:
             self.site_id = self.model.site("gripperframe").id
         except KeyError:
             self.site_id = self.model.site("end_effector").id
+
+        self._recording = False
+        self._video_writer = None
+        self._renderer = None
 
     def reset(self, pose: str = "HOME") -> None:
         """Reset the robot to a specified preset pose.
@@ -143,6 +148,8 @@ class SO101Robot:
         """
         for _ in range(num_steps):
             mujoco.mj_step(self.model, self.data)
+            if getattr(self, "_recording", False):
+                self.record_frame()
 
     def move_to_pose(
         self,
@@ -184,3 +191,69 @@ class SO101Robot:
         self.step(100)
         if hasattr(self, "viewer") and self.viewer is not None:
             self.viewer.sync()
+
+    def start_recording(
+        self,
+        video_path: str | Path = "sweep_video.mp4",
+        fps: int = 30,
+        width: int = 640,
+        height: int = 480,
+    ) -> None:
+        """Start recording simulation frames to a video file.
+
+        Args:
+            video_path: Destination file path for the recorded video.
+            fps: Frames per second for the video writer.
+            width: Width of the rendered frames in pixels.
+            height: Height of the rendered frames in pixels.
+        """
+        import imageio
+
+        self._recording = True
+        self._video_path = str(video_path)
+        self._renderer = mujoco.Renderer(self.model, height=height, width=width)
+        self._video_writer = imageio.get_writer(self._video_path, fps=fps)
+
+        self._camera = mujoco.MjvCamera()
+        mujoco.mjv_defaultCamera(self._camera)
+        self._camera.azimuth = 135
+        self._camera.elevation = -25
+        self._camera.distance = 0.75
+        self._camera.lookat = np.array([0.15, 0.0, 0.15])
+
+        self._scene_option = mujoco.MjvOption()
+        self._scene_option.frame = mujoco.mjtFrame.mjFRAME_SITE
+
+        self._last_record_time = 0.0
+        self._record_dt = 1.0 / fps
+
+    def record_frame(self, force: bool = False) -> None:
+        """Render and append a frame to the active video writer.
+
+        Args:
+            force: If True, capture frame immediately regardless of time delta.
+        """
+        if not getattr(self, "_recording", False) or self._video_writer is None:
+            return
+
+        sim_time = self.data.time
+        if force or (sim_time - self._last_record_time >= self._record_dt):
+            scene_opt = getattr(self, "_scene_option", None)
+            if scene_opt is not None:
+                self._renderer.update_scene(self.data, camera=self._camera, scene_option=scene_opt)
+            else:
+                self._renderer.update_scene(self.data, camera=self._camera)
+            frame = self._renderer.render()
+            self._video_writer.append_data(frame)
+            self._last_record_time = sim_time
+
+    def stop_recording(self) -> None:
+        """Stop recording and close the video file writer."""
+        if getattr(self, "_recording", False) and self._video_writer is not None:
+            self._video_writer.close()
+            if self._renderer is not None:
+                self._renderer.close()
+            self._video_writer = None
+            self._renderer = None
+            self._recording = False
+            print(f"Video saved successfully to: {self._video_path}")
