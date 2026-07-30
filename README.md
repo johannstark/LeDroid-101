@@ -1,10 +1,6 @@
 # LeDroid-101
 
-My approach to HuggingFace's LeRobot and SO-101 Robot Arm.
-
----
-
-## Welcome to LeDroid-101 🤖
+Welcome to LeDroid-101 🤖
 
 LeDroid-101 is my custom approach for replicating, learning, and expanding HuggingFace's SO-101 Robot arm setup. This repository is intended to be replicated by anyone to learn everything about configuring, assembling, calibrating, and using this robot in a simplified and friendly way.
 
