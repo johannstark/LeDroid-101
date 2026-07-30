@@ -46,15 +46,23 @@ class LineTrajectoryGenerator:
 
         half_dist = distance / 2.0
         waypoints = []
+        n_half = max(2, num_points // 2)
+        n_full = max(4, num_points)
 
-        # Forward segment: sweep from (center - 10cm) to (center + 10cm)
-        for t in np.linspace(-half_dist, half_dist, num_points):
+        # Segment 1: from center (0.0) out to +half_dist
+        for t in np.linspace(0.0, half_dist, n_half):
             pt = start_pos.copy()
             pt[axis_idx] += t
             waypoints.append(pt)
 
-        # Backward segment: sweep back from (center + 10cm) to (center - 10cm)
-        for t in np.linspace(half_dist, -half_dist, num_points):
+        # Segment 2: from +half_dist across to -half_dist
+        for t in np.linspace(half_dist, -half_dist, n_full):
+            pt = start_pos.copy()
+            pt[axis_idx] += t
+            waypoints.append(pt)
+
+        # Segment 3: from -half_dist back to center (0.0)
+        for t in np.linspace(-half_dist, 0.0, n_half):
             pt = start_pos.copy()
             pt[axis_idx] += t
             waypoints.append(pt)
@@ -95,6 +103,7 @@ class LineTrajectoryGenerator:
         dist_cm = distance * 100
         print(f"Executing line sweep along {axis.upper()}-axis ({dist_cm:.1f} cm)...")
         current_qpos = self.robot.get_joint_positions()
+        nominal_anchor = current_qpos.copy()
 
         for idx, target_3d in enumerate(waypoints):
             # Check if viewer was closed by user
@@ -105,20 +114,23 @@ class LineTrajectoryGenerator:
             ):
                 return
 
-            # Compute inverse kinematics for current target point
+            # Compute position IK for current target point with null-space posture anchor
             target_qpos = self.ik_solver.solve_ik(
                 target_pos=target_3d,
                 initial_qpos=current_qpos,
-                max_iters=50,
-                tol=1e-3,
+                nominal_qpos=nominal_anchor,
+                preserve_orientation=False,
+                max_iters=150,
+                tol=1e-4,
             )
 
-            # Command robot
+            # Command robot and advance joint tracking state for continuity
             self.robot.set_joint_positions(target_qpos)
+            current_qpos = target_qpos.copy()
 
             # Advance simulation physics if available
             if hasattr(self.robot, "step"):
-                self.robot.step(num_steps=10)
+                self.robot.step(num_steps=15)
 
             # Sync viewer window if viewer reference was provided
             if hasattr(self.robot, "viewer") and self.robot.viewer is not None:
