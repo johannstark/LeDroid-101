@@ -18,10 +18,18 @@ To run the unified CLI, use `uv run python main.py` with your chosen execution m
 ### **Task Routines (`--task`)**
 
 #### **1. Cartesian Line Sweep (`--task line`)**
-Move the end-effector along straight lines in Cartesian 3D space (-10 cm to +10 cm) to test IK and joint limits:
+Move the end-effector along smooth, vibration-free straight lines in Cartesian 3D space across X, Y, and Z axes to test inverse kinematics, posture stability, and joint limits.
+
+Featuring real-time RGB coordinate frame visualization (`mjFRAME_SITE`), seamless out-and-back trajectory loops, and under-actuated 5-DOF damped least-squares IK with null-space posture anchoring towards an ergonomic mid-air `SWEEP_HOME` configuration:
+
+![Cartesian Line Sweep Simulation Video Demo](sweep_fixed.mp4)
+
 ```bash
-# Pure simulation
+# Pure simulation with live interactive 3D GUI viewer
 uv run python main.py --mode sim --task line
+
+# Headless video recording to disk (no GUI needed!)
+uv run python main.py --mode sim --task line --record --record-path docs/sweep_fixed.mp4
 
 # Digital Twin Mode (moves physical arm live matching MuJoCo viewer!)
 uv run python main.py --mode twin --port /dev/tty.usbmodem1201 --task line
@@ -105,11 +113,11 @@ simulation/
 │   ├── joints_properties.xml# STS3215 position actuator specs
 │   └── meshes/              # 13 STL CAD model meshes
 │
-├── robot.py                 # High-level SO101Robot MuJoCo controller & preset poses
+├── robot.py                 # SO101Robot controller, preset poses (SWEEP_HOME), & video recorder
 ├── real_robot.py            # RealSO101Robot hardware interface using lerobot MotorsBus
 ├── twin_robot.py            # TwinSO101Robot digital twin controller mirroring sim to real
-├── cartesian_ik.py          # Numerical Damped Least-Squares Inverse Kinematics solver
-├── line_trajectory.py       # Cartesian straight-line waypoint trajectory generator
+├── cartesian_ik.py          # 5-DOF decoupled DLS Inverse Kinematics with posture projection
+├── line_trajectory.py       # Continuous closed-loop piecewise-linear waypoint generator
 ├── env.py                   # SO101ReachEnv standard Gymnasium RL environment
 ├── warp_env.py              # SO101WarpEnv parallel GPU/CPU batched simulator
 ├── simulate.py              # Interactive 3D passive viewer launcher
