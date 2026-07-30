@@ -73,11 +73,20 @@ Inverse kinematics is significantly more difficult than forward kinematics. Whil
 
 1. **Analytical IK:** Involves finding closed-form algebraic equations for $\theta_1$ through $\theta_6$. This is computationally very fast but requires a specific robot geometry (such as an intersecting wrist, which the SO-101 roughly approximates).
    
-2. **Numerical IK:** Uses iterative algorithms (like Jacobian transpose, Jacobian pseudoinverse, or damped least squares) to converge on a solution by stepping the joint angles to minimize the error between the current position and the target. This is easier to implement for arbitrary geometries but is slower and can get stuck in local minima or at singularities.
+2. **Numerical IK (Damped Least Squares & Null-Space Projection):** Uses iterative optimization algorithms to converge on joint angle configurations by stepping along spatial velocity gradients. In LeDroid-101, we implement robust **Levenberg-Marquardt Damped Least Squares (DLS)** combined with secondary-task **Null-Space Posture Regularization** to avoid kinematic singularities and prevent arm collapse.
 
-### Addressing Multiple Solutions
-For a 6-DOF arm like the SO-101, you often decouple the IK into two parts (if the wrist axes intersect):
-1. **Position:** Use the first three joints (Base, Shoulder, Elbow) to position the wrist center.
-2. **Orientation:** Use the last three joints (Wrist Flex, Wrist Roll) to orient the end-effector.
+### Addressing Under-Actuation & Gripper Decoupling
+While the SO-101 command vector contains 6 motor inputs, anatomical analysis reveals that only **5 articulated spatial joints** contribute to positioning and orienting the wrist frame:
+1. **Base (Shoulder Pan)**: $Z$-axis rotation
+2. **Shoulder Lift**: $Y$-axis elevation
+3. **Elbow Flex**: $Y$-axis pitch
+4. **Wrist Flex**: $Y$-axis pitch
+5. **Wrist Roll**: $X/Z$ tool axial twist
 
-In practice, we will use established numerical libraries in our code implementations to solve IK reliably without deriving complex algebraic formulas.
+The 6th actuator drives a single-hinge opening jaw on the gripper assembly and does not shift the coordinate frame triad (`gripperframe`). Consequently, enforcing full 6-DOF tracking ($\mathbb{R}^6$) on a 5-DOF arm introduces over-determined numerical deadlocks during horizontal line sweeps. 
+
+In our practical implementation, we decouple the spatial IK solver to optimize primary **3D Position Tracking** ($3 \times 5$ full-rank Jacobian) while utilizing the remaining 2D internal null-space to pull joint postures smoothly toward an ergonomic workspace anchor (`SWEEP_HOME`).
+
+> 📚 **Deep-Dive Mathematics & Demonstration**: 
+> - Read [docs/kinematics_math.md](../docs/kinematics_math.md) for full mathematical derivations of spatial Jacobians, DLS pseudo-inversions, null-space projection matrices, and piecewise-linear trajectory equations.
+> - Watch our precision simulation demonstration video: [docs/sweep_fixed.mp4](../docs/sweep_fixed.mp4)!
