@@ -32,8 +32,18 @@ def ensure_mjpython() -> None:
         os.execv(mjpython_path, [mjpython_path] + sys.argv)
 
 
-def main() -> None:
-    """Launch interactive 3D simulation viewer with keyboard control callbacks."""
+def main(
+    robot: SO101Robot | None = None,
+    record: bool = False,
+    record_path: str = "recordings/video.mp4",
+) -> None:
+    """Launch interactive 3D simulation viewer with keyboard control callbacks.
+
+    Args:
+        robot: Optional robot instance (SO101Robot or TwinSO101Robot).
+        record: If True, record execution frames to a video file.
+        record_path: Destination path for output video file.
+    """
     ensure_mjpython()
 
     print("Launching SO-101 MuJoCo Interactive Simulation Viewer...")
@@ -49,7 +59,8 @@ def main() -> None:
     print("  [Space] Toggle Gripper Open / Closed")
     print("-------------------------------------------------------")
 
-    robot = SO101Robot()
+    if robot is None:
+        robot = SO101Robot()
     trajectory_gen = LineTrajectoryGenerator(robot)
 
     # State flags
@@ -88,16 +99,27 @@ def main() -> None:
 
     robot.reset("HOME")
 
-    with mujoco.viewer.launch_passive(robot.model, robot.data, key_callback=key_callback) as viewer:
-        viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE
-        while viewer.is_running():
-            if active_action in ["x", "y", "z"]:
-                axis = active_action
-                active_action = None
-                trajectory_gen.execute_line_sweep(axis=axis, distance=0.08, num_points=30)
+    if record and hasattr(robot, "start_recording"):
+        print(f"Starting video recording to {record_path}...")
+        robot.start_recording(record_path)
 
-            robot.step(1)
-            viewer.sync()
+    try:
+        with mujoco.viewer.launch_passive(
+            robot.model, robot.data, key_callback=key_callback
+        ) as viewer:
+            robot.viewer = viewer
+            viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE
+            while viewer.is_running():
+                if active_action in ["x", "y", "z"]:
+                    axis = active_action
+                    active_action = None
+                    trajectory_gen.execute_line_sweep(axis=axis, distance=0.08, num_points=30)
+
+                robot.step(1)
+                viewer.sync()
+    finally:
+        if record and hasattr(robot, "stop_recording"):
+            robot.stop_recording()
 
 
 if __name__ == "__main__":

@@ -109,6 +109,27 @@ class TwinSO101Robot:
         if hasattr(self, "viewer") and self.viewer is not None:
             self.viewer.sync()
 
+    def start_recording(
+        self,
+        video_path: str = "recordings/video.mp4",
+        fps: int = 30,
+        width: int = 640,
+        height: int = 480,
+    ) -> None:
+        """Start recording simulation frames to a video file.
+
+        Args:
+            video_path: Destination file path for the recorded video.
+            fps: Frames per second for the video writer.
+            width: Width of the rendered frames in pixels.
+            height: Height of the rendered frames in pixels.
+        """
+        self.sim.start_recording(video_path=video_path, fps=fps, width=width, height=height)
+
+    def stop_recording(self) -> None:
+        """Stop recording and close the video file writer."""
+        self.sim.stop_recording()
+
     def disconnect(self) -> None:
         """Disconnect physical serial bus."""
         self.real.disconnect()

@@ -28,8 +28,11 @@ Featuring real-time RGB coordinate frame visualization (`mjFRAME_SITE`), seamles
 # Pure simulation with live interactive 3D GUI viewer
 uv run python main.py --mode sim --task line
 
-# Headless video recording to disk (no GUI needed!)
-uv run python main.py --mode sim --task line --record --record-path docs/sweep_fixed.mp4
+# Headless video recording to disk (defaults to recordings/video.mp4)
+uv run python main.py --mode sim --task line --record
+
+# Custom output file path
+uv run python main.py --mode sim --task line --record --record-path recordings/sweep.mp4
 
 # Digital Twin Mode (moves physical arm live matching MuJoCo viewer!)
 uv run python main.py --mode twin --port /dev/tty.usbmodem1201 --task line

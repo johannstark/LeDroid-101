@@ -48,9 +48,13 @@ The `main.py` script is the entry point for running the SO-101 robotic arm in si
 > Find the serial port using the `lerobot-find-port` command.
 
 * `uv run python main.py --mode sim --task line` - Run the simulation with a Cartesian line sweep task.
-* `uv run python main.py --mode sim --task line --record --record-path video.mp4` - Record the simulation execution to a video file.
+* `uv run python main.py --mode sim --task poses --record` - Record any task routine to video (defaults to `recordings/video.mp4`).
+* `uv run python main.py --mode sim --task line --record --record-path recordings/my_sweep.mp4` - Custom video output path.
 * `uv run python main.py --mode twin --port <serial_port> --task line` - Run the digital twin mode with a Cartesian line sweep task.
 * `uv run python main.py --mode real --port <serial_port> --task line` - Run the real-world robot to perform a Cartesian line sweep task.
+
+> [!TIP]
+> **Video Recording (`--record`)**: The `--record` flag can be used with any task (`line`, `poses`, `manual`, `interactive`). By default, recordings are saved to `recordings/video.mp4`. The `recordings/` directory is excluded from git tracking via `.gitignore` for clean local development.
 
 ## Demonstration: Precision Cartesian Line Sweeps & 5-DOF IK
 
@@ -61,7 +65,7 @@ Watch the SO-101 robotic arm execute precision linear trajectories across the X,
 > **Try it yourself!** Run the headless simulation recording directly via:
 >
 > ```bash
-> uv run python main.py --mode sim --task line --record --record-path video.mp4
+> uv run python main.py --mode sim --task line --record
 > ```
 
 ## Reference Guides & Documentation

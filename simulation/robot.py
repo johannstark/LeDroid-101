@@ -194,7 +194,7 @@ class SO101Robot:
 
     def start_recording(
         self,
-        video_path: str | Path = "sweep_video.mp4",
+        video_path: str | Path = "recordings/video.mp4",
         fps: int = 30,
         width: int = 640,
         height: int = 480,
@@ -211,6 +211,7 @@ class SO101Robot:
 
         self._recording = True
         self._video_path = str(video_path)
+        Path(self._video_path).parent.mkdir(parents=True, exist_ok=True)
         self._renderer = mujoco.Renderer(self.model, height=height, width=width)
         self._video_writer = imageio.get_writer(self._video_path, fps=fps)
 
